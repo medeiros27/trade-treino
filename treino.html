@@ -113,6 +113,7 @@
       <div><div class="lbl">Você tem</div><div class="big" id="posQty">—</div></div>
       <div style="text-align:right"><div class="lbl">Lucro/Prejuízo aberto</div><div class="big" id="posPnl">—</div></div>
     </div>
+    <div id="stopInfo" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
   </div>
 
   <div class="card">
@@ -122,6 +123,11 @@
       <div class="pct" data-p="0.25">25%</div>
       <div class="pct" data-p="0.5">50%</div>
       <div class="pct" data-p="1">Tudo</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px">
+      <span style="font-size:13px;color:var(--muted)">🛡️ Stop-loss:</span>
+      <input type="number" id="stop" value="5" style="width:70px;padding:9px" />
+      <span style="font-size:13px;color:var(--muted)">% — vende sozinho se cair isso</span>
     </div>
     <div class="btns">
       <button class="btn buy" id="btnBuy">COMPRAR</button>
@@ -156,7 +162,7 @@ const BASE = "https://data-api.binance.vision/api/v3";
 const FEE = 0.001, START = 10000;
 let chart, candleS, ema9S, ema21S, last = {price:0}, timer;
 
-const def = () => ({cash:START, qty:0, avg:0, journal:[], symbol:"BTCUSDT", interval:"5m"});
+const def = () => ({cash:START, qty:0, avg:0, journal:[], symbol:"BTCUSDT", interval:"5m", stopPct:5, stopPrice:0});
 let S = load();
 function load(){ try{return Object.assign(def(), JSON.parse(localStorage.getItem("treino")||"{}"));}catch(e){return def();} }
 function save(){ localStorage.setItem("treino", JSON.stringify(S)); }
@@ -219,6 +225,7 @@ async function refresh(){
     $("bTrend").innerHTML = up?`<span class="up">Alta</span>`:`<span class="down">Baixa</span>`;
     $("bMacd").innerHTML = mh>=0?`<span class="up">Comprador</span>`:`<span class="down">Vendedor</span>`;
     render();
+    if(S.qty>0 && S.stopPrice && last.price <= S.stopPrice) sell("stop-loss");
   }catch(e){ $("rsiTxt").textContent="erro ao atualizar"; }
 }
 
@@ -236,6 +243,7 @@ function render(){
     $("posQty").textContent = S.qty.toFixed(6)+" "+S.symbol.replace("USDT","");
     const op = (last.price - S.avg)*S.qty, opp = (last.price/S.avg-1)*100;
     $("posPnl").innerHTML = `<span class="${op>=0?'up':'down'}">${op>=0?'+':''}${fmt(op)} (${opp>=0?'+':''}${opp.toFixed(1)}%)</span>`;
+    $("stopInfo").innerHTML = S.stopPrice ? `🛡️ Stop-loss em <b>${fmt(S.stopPrice)}</b> · entrada ${fmt(S.avg)} · se chegar lá, vende sozinho (perda travada em ${S.stopPct}%)` : "";
   } else $("posCard").style.display="none";
 
   $("btnSell").disabled = S.qty<=0;
@@ -260,18 +268,23 @@ function buy(){
   const fee = amt*FEE, q = (amt-fee)/last.price;
   S.avg = S.qty>0 ? (S.qty*S.avg + q*last.price)/(S.qty+q) : last.price;
   S.qty += q; S.cash -= amt;
+  S.stopPct = parseFloat($("stop").value) || 5;
+  S.stopPrice = S.avg * (1 - S.stopPct/100);
   S.journal.push({t:now(),side:"COMPRA",price:last.price,usdt:amt,qty:q,note:$("motivo").value||"",equity:equity()});
   $("motivo").value=""; $("amount").value="";
-  save(); render(); toast("Comprou (fake) ✅");
+  save(); render(); toast("Comprou (fake) ✅ · stop em "+fmt(S.stopPrice));
 }
-function sell(){
+function sell(reason){
   if(S.qty<=0) return;
   const proceeds = S.qty*last.price, fee = proceeds*FEE;
   const pnl = (last.price - S.avg)*S.qty - fee;
   S.cash += proceeds - fee;
-  S.journal.push({t:now(),side:"VENDA",price:last.price,usdt:proceeds-fee,qty:S.qty,pnl:pnl,note:$("motivo").value||"",equity:S.cash});
-  S.qty=0; S.avg=0; $("motivo").value="";
-  save(); render(); toast((pnl>=0?"Lucro":"Prejuízo")+" fake: "+fmt(pnl)+" USDT");
+  const note = reason==="stop-loss" ? "🛡️ STOP-LOSS automático" : ($("motivo").value||"");
+  S.journal.push({t:now(),side:"VENDA",price:last.price,usdt:proceeds-fee,qty:S.qty,pnl:pnl,note:note,equity:S.cash});
+  S.qty=0; S.avg=0; S.stopPrice=0; $("motivo").value="";
+  save(); render();
+  if(reason==="stop-loss") toast("🛡️ Stop-loss disparou! Saiu pra te proteger ("+fmt(pnl)+" USDT)");
+  else toast((pnl>=0?"Lucro":"Prejuízo")+" fake: "+fmt(pnl)+" USDT");
 }
 
 function stats(){
@@ -299,7 +312,7 @@ function exportJournal(){
 // eventos
 document.querySelectorAll(".pct").forEach(b=>b.onclick=()=>{ $("amount").value=(S.cash*parseFloat(b.dataset.p)).toFixed(2); });
 $("btnBuy").onclick=buy;
-$("btnSell").onclick=sell;
+$("btnSell").onclick=()=>sell("manual");
 $("symbol").onchange=()=>{ S.symbol=$("symbol").value; save(); refresh(); };
 $("export").onclick=exportJournal;
 $("copy").onclick=()=>{ const t=$("exportText"); t.select(); try{navigator.clipboard.writeText(t.value);}catch(e){document.execCommand("copy");} toast("Copiado!"); };
@@ -308,6 +321,7 @@ $("reset").onclick=()=>{ if(confirm("Zerar todo o treino e voltar pra 10.000 USD
 
 $("symbol").value = S.symbol;
 $("speed").value = S.interval;
+$("stop").value = S.stopPct;
 $("speed").onchange = () => { S.interval = $("speed").value; save(); refresh(); };
 buildChart(); refresh(); render();
 timer = setInterval(refresh, 20000);
