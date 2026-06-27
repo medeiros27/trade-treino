@@ -1,0 +1,10 @@
+{
+  "name": "Painel de Análise",
+  "short_name": "Painel",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0e11",
+  "theme_color": "#0b0e11",
+  "icons": []
+}

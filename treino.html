@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Treino" />
+<meta name="theme-color" content="#0b0e11" />
+<title>Treino de Trade — dinheiro fake</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+  :root{
+    --bg:#0b0e11; --panel:#151a21; --panel2:#1b222c; --border:#232b36;
+    --text:#e6edf3; --muted:#8b97a7; --green:#22c55e; --red:#ef4444;
+    --blue:#3b82f6; --yellow:#eab308;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    padding:env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 12px);}
+  .bar{background:#2a1f0a;border:1px solid #5c4607;color:#fde68a;border-radius:10px;
+    padding:8px 11px;font-size:12px;text-align:center;margin:10px 0}
+  .row{display:flex;gap:10px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+  .saldo{flex:1;text-align:center}
+  .saldo .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .saldo .v{font-size:21px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+  .up{color:var(--green)} .down{color:var(--red)} .neu{color:var(--muted)}
+  select{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:11px;font-size:15px;outline:none}
+  .px{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+  .pxsub{font-size:13px;color:var(--muted)}
+  #chart{width:100%;height:240px;margin-top:8px}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .badge{flex:1;min-width:90px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:10px;padding:9px;text-align:center}
+  .badge .l{font-size:10px;color:var(--muted);text-transform:uppercase}
+  .badge .v{font-size:15px;font-weight:700;margin-top:2px}
+  .pos{display:flex;justify-content:space-between;align-items:center}
+  .pos .lbl{font-size:12px;color:var(--muted)}
+  .pos .big{font-size:20px;font-weight:800}
+  input[type=number],input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--border);
+    color:var(--text);border-radius:10px;padding:12px;font-size:16px;outline:none}
+  .pcts{display:flex;gap:8px;margin:8px 0}
+  .pct{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    border-radius:8px;padding:9px;font-size:13px;text-align:center;cursor:pointer}
+  .btns{display:flex;gap:10px;margin-top:6px}
+  .btn{flex:1;border:none;border-radius:12px;padding:17px;font-size:17px;font-weight:800;
+    color:#fff;cursor:pointer}
+  .buy{background:var(--green)} .sell{background:var(--red)}
+  .btn:disabled{opacity:.35}
+  h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 10px}
+  .jrow{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border)}
+  .jrow:last-child{border:none}
+  .jrow .s{font-weight:700}
+  .mini{display:flex;gap:8px;margin-top:8px}
+  .mini button{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:11px;font-size:13px;cursor:pointer}
+  #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;background:#111826;
+    border:1px solid var(--border);color:var(--text);padding:11px 16px;border-radius:10px;
+    font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+  #toast.show{opacity:1}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;
+    justify-content:center;padding:18px;z-index:10}
+  .modal.show{display:flex}
+  .modal .box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;width:100%;max-width:440px}
+  textarea{width:100%;height:180px;background:var(--panel2);border:1px solid var(--border);
+    color:var(--text);border-radius:10px;padding:10px;font-size:12px;font-family:monospace}
+  small{color:var(--muted);font-size:11.5px;line-height:1.5;display:block}
+</style>
+</head>
+<body>
+  <div class="bar">🎓 MODO TREINO · dinheiro 100% FAKE · você aprende sem risco</div>
+
+  <div class="card">
+    <div class="row">
+      <div class="saldo"><div class="l">Caixa (USDT)</div><div class="v" id="cash">—</div></div>
+      <div class="saldo"><div class="l">Patrimônio</div><div class="v" id="equity">—</div></div>
+      <div class="saldo"><div class="l">Resultado</div><div class="v" id="pnl">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <select id="symbol">
+      <option value="BTCUSDT">Bitcoin (BTC)</option>
+      <option value="ETHUSDT">Ethereum (ETH)</option>
+      <option value="SOLUSDT">Solana (SOL)</option>
+      <option value="BNBUSDT">BNB</option>
+      <option value="XRPUSDT">XRP</option>
+      <option value="DOGEUSDT">Dogecoin (DOGE)</option>
+    </select>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:12px">
+      <span class="px" id="price">—</span>
+      <span class="pxsub" id="rsiTxt">—</span>
+    </div>
+    <div id="chart"></div>
+    <div class="badges">
+      <div class="badge"><div class="l">RSI</div><div class="v" id="bRsi">—</div></div>
+      <div class="badge"><div class="l">Tendência</div><div class="v" id="bTrend">—</div></div>
+      <div class="badge"><div class="l">Momentum</div><div class="v" id="bMacd">—</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="posCard" style="display:none">
+    <div class="pos">
+      <div><div class="lbl">Você tem</div><div class="big" id="posQty">—</div></div>
+      <div style="text-align:right"><div class="lbl">Lucro/Prejuízo aberto</div><div class="big" id="posPnl">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <input type="text" id="motivo" placeholder="Por que vai operar? (opcional, te ajuda a pensar)" />
+    <div style="margin-top:10px"><input type="number" id="amount" placeholder="Quanto investir (USDT)" /></div>
+    <div class="pcts">
+      <div class="pct" data-p="0.25">25%</div>
+      <div class="pct" data-p="0.5">50%</div>
+      <div class="pct" data-p="1">Tudo</div>
+    </div>
+    <div class="btns">
+      <button class="btn buy" id="btnBuy">COMPRAR</button>
+      <button class="btn sell" id="btnSell">VENDER TUDO</button>
+    </div>
+    <small style="margin-top:8px">Cada operação simula uma taxa de 0,1% (como no mundo real). Compra com o valor que você digitar; "Vender tudo" zera a posição.</small>
+  </div>
+
+  <div class="card">
+    <h3>📒 Diário de operações (<span id="jcount">0</span>)</h3>
+    <div id="journal"><small>Nenhuma operação ainda. Faça sua primeira compra fake!</small></div>
+    <div class="mini">
+      <button id="export">📤 Exportar diário (pro Claude)</button>
+      <button id="reset">♻️ Zerar treino</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+  <div class="modal" id="modal"><div class="box">
+    <h3>Seu diário — copie e cole pro Claude avaliar</h3>
+    <textarea id="exportText" readonly></textarea>
+    <div class="mini">
+      <button id="copy">Copiar</button>
+      <button id="closeModal">Fechar</button>
+    </div>
+    <small style="margin-top:8px">Mande isto pro Claude de tempos em tempos. Ele analisa sua disciplina e te diz se está evoluindo.</small>
+  </div></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const BASE = "https://data-api.binance.vision/api/v3";
+const FEE = 0.001, START = 10000, INTERVAL = "15m";
+let chart, candleS, ema9S, ema21S, last = {price:0}, timer;
+
+const def = () => ({cash:START, qty:0, avg:0, journal:[], symbol:"BTCUSDT"});
+let S = load();
+function load(){ try{return Object.assign(def(), JSON.parse(localStorage.getItem("treino")||"{}"));}catch(e){return def();} }
+function save(){ localStorage.setItem("treino", JSON.stringify(S)); }
+function now(){ return new Date().toLocaleString("pt-BR"); }
+function fmt(n,d=2){ return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+// ---------- indicadores ----------
+function ema(v,p){const o=Array(v.length).fill(null);const k=2/(p+1);let pr,s=0;
+  for(let i=0;i<v.length;i++){if(i<p){s+=v[i];if(i===p-1){pr=s/p;o[i]=pr;}}else{pr=v[i]*k+pr*(1-k);o[i]=pr;}}return o;}
+function rsi(v,p=14){const o=Array(v.length).fill(null);let g=0,l=0;
+  for(let i=1;i<=p;i++){const c=v[i]-v[i-1];if(c>=0)g+=c;else l-=c;}
+  let ag=g/p,al=l/p;o[p]=al===0?100:100-100/(1+ag/al);
+  for(let i=p+1;i<v.length;i++){const c=v[i]-v[i-1];const gg=c>0?c:0,ll=c<0?-c:0;
+    ag=(ag*(p-1)+gg)/p;al=(al*(p-1)+ll)/p;o[i]=al===0?100:100-100/(1+ag/al);}return o;}
+function macdHist(v){const e12=ema(v,12),e26=ema(v,26);
+  const line=v.map((_,i)=>e12[i]!=null&&e26[i]!=null?e12[i]-e26[i]:null);
+  const st=line.findIndex(x=>x!=null);const sub=line.slice(st);
+  const sk=2/10;let pr,s=0,sig=Array(sub.length).fill(null);
+  for(let i=0;i<sub.length;i++){if(i<9){s+=sub[i];if(i===8){pr=s/9;sig[i]=pr;}}else{pr=sub[i]*sk+pr*(1-sk);sig[i]=pr;}}
+  const last=line.length-1;const sl=sig[sub.length-1];return (line[last]!=null&&sl!=null)?line[last]-sl:0;}
+
+// ---------- chart ----------
+function buildChart(){
+  chart = LightweightCharts.createChart($("chart"), {
+    height:240, layout:{background:{color:"transparent"},textColor:"#8b97a7",fontSize:10},
+    grid:{vertLines:{color:"#1b222c"},horzLines:{color:"#1b222c"}},
+    rightPriceScale:{borderColor:"#232b36"}, timeScale:{borderColor:"#232b36",timeVisible:true},
+    handleScroll:false, handleScale:false,
+  });
+  candleS = chart.addCandlestickSeries({upColor:"#22c55e",downColor:"#ef4444",borderVisible:false,wickUpColor:"#22c55e",wickDownColor:"#ef4444"});
+  ema9S = chart.addLineSeries({color:"#3b82f6",lineWidth:1,priceLineVisible:false,lastValueVisible:false});
+  ema21S = chart.addLineSeries({color:"#eab308",lineWidth:1,priceLineVisible:false,lastValueVisible:false});
+  window.addEventListener("resize",()=>chart.applyOptions({width:$("chart").clientWidth}));
+}
+
+async function refresh(){
+  try{
+    const r = await fetch(`${BASE}/klines?symbol=${S.symbol}&interval=${INTERVAL}&limit=200`);
+    const raw = await r.json();
+    const c = raw.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4]}));
+    const closes = c.map(x=>x.close);
+    const e9=ema(closes,9), e21=ema(closes,21), rs=rsi(closes,14), mh=macdHist(closes);
+    last.price = closes[closes.length-1];
+
+    candleS.setData(c);
+    ema9S.setData(c.map((x,i)=>e9[i]!=null?{time:x.time,value:e9[i]}:null).filter(Boolean));
+    ema21S.setData(c.map((x,i)=>e21[i]!=null?{time:x.time,value:e21[i]}:null).filter(Boolean));
+    chart.applyOptions({width:$("chart").clientWidth});
+    chart.timeScale().fitContent();
+
+    const rv = rs[rs.length-1];
+    $("price").textContent = fmt(last.price);
+    $("rsiTxt").textContent = "RSI " + rv.toFixed(0);
+    // RSI badge
+    let rstate="neutro",rcls="neu";
+    if(rv>70){rstate="esticado ↑";rcls="down";} else if(rv<30){rstate="barato ↓";rcls="up";}
+    $("bRsi").innerHTML = `<span class="${rcls}">${rv.toFixed(0)} · ${rstate}</span>`;
+    // trend
+    const up = last.price > e21[e21.length-1];
+    $("bTrend").innerHTML = up?`<span class="up">Alta</span>`:`<span class="down">Baixa</span>`;
+    $("bMacd").innerHTML = mh>=0?`<span class="up">Comprador</span>`:`<span class="down">Vendedor</span>`;
+    render();
+  }catch(e){ $("rsiTxt").textContent="erro ao atualizar"; }
+}
+
+function equity(){ return S.cash + S.qty*last.price; }
+
+function render(){
+  $("cash").textContent = fmt(S.cash);
+  const eq = equity();
+  $("equity").textContent = fmt(eq);
+  const res = eq - START, pct = res/START*100;
+  $("pnl").innerHTML = `<span class="${res>=0?'up':'down'}">${res>=0?'+':''}${fmt(res)} (${pct>=0?'+':''}${pct.toFixed(1)}%)</span>`;
+
+  if(S.qty>0){
+    $("posCard").style.display="block";
+    $("posQty").textContent = S.qty.toFixed(6)+" "+S.symbol.replace("USDT","");
+    const op = (last.price - S.avg)*S.qty, opp = (last.price/S.avg-1)*100;
+    $("posPnl").innerHTML = `<span class="${op>=0?'up':'down'}">${op>=0?'+':''}${fmt(op)} (${opp>=0?'+':''}${opp.toFixed(1)}%)</span>`;
+  } else $("posCard").style.display="none";
+
+  $("btnSell").disabled = S.qty<=0;
+  $("btnBuy").disabled = S.cash<=1;
+
+  const j = S.journal.slice().reverse().slice(0,15);
+  $("jcount").textContent = S.journal.length;
+  $("journal").innerHTML = j.length ? j.map(t=>`<div class="jrow">
+    <span class="s ${t.side==='COMPRA'?'up':'down'}">${t.side}</span>
+    <span>${fmt(t.price)}</span>
+    <span>${t.usdt?fmt(t.usdt)+' USDT':''} ${t.pnl!=null?`<b class="${t.pnl>=0?'up':'down'}">${t.pnl>=0?'+':''}${fmt(t.pnl)}</b>`:''}</span>
+    </div>`).join("") : '<small>Nenhuma operação ainda.</small>';
+}
+
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1800); }
+
+function buy(){
+  let amt = parseFloat($("amount").value);
+  if(!amt||amt<=0) amt = S.cash;
+  if(amt>S.cash) amt = S.cash;
+  if(amt<1){ toast("Sem caixa suficiente"); return; }
+  const fee = amt*FEE, q = (amt-fee)/last.price;
+  S.avg = S.qty>0 ? (S.qty*S.avg + q*last.price)/(S.qty+q) : last.price;
+  S.qty += q; S.cash -= amt;
+  S.journal.push({t:now(),side:"COMPRA",price:last.price,usdt:amt,qty:q,note:$("motivo").value||"",equity:equity()});
+  $("motivo").value=""; $("amount").value="";
+  save(); render(); toast("Comprou (fake) ✅");
+}
+function sell(){
+  if(S.qty<=0) return;
+  const proceeds = S.qty*last.price, fee = proceeds*FEE;
+  const pnl = (last.price - S.avg)*S.qty - fee;
+  S.cash += proceeds - fee;
+  S.journal.push({t:now(),side:"VENDA",price:last.price,usdt:proceeds-fee,qty:S.qty,pnl:pnl,note:$("motivo").value||"",equity:S.cash});
+  S.qty=0; S.avg=0; $("motivo").value="";
+  save(); render(); toast((pnl>=0?"Lucro":"Prejuízo")+" fake: "+fmt(pnl)+" USDT");
+}
+
+function stats(){
+  const sells = S.journal.filter(t=>t.side==="VENDA");
+  const wins = sells.filter(t=>t.pnl>0).length;
+  const eqs = S.journal.map(t=>t.equity);
+  let peak=START, dd=0; eqs.forEach(e=>{peak=Math.max(peak,e); dd=Math.min(dd,e/peak-1);});
+  const eq=equity();
+  return {trades:S.journal.length, vendas:sells.length, wins, eq, res:eq-START,
+    winrate: sells.length?(wins/sells.length*100).toFixed(0):"-", dd:(dd*100).toFixed(1)};
+}
+function exportJournal(){
+  const s = stats();
+  let txt = `=== DIÁRIO DE TREINO (dinheiro fake) ===\n`;
+  txt += `Ativo atual: ${S.symbol}\n`;
+  txt += `Patrimônio: ${fmt(s.eq)} USDT (começou com ${START})\n`;
+  txt += `Resultado: ${s.res>=0?'+':''}${fmt(s.res)} USDT\n`;
+  txt += `Operações: ${s.trades} | Vendas: ${s.vendas} | Acerto: ${s.winrate}% | Pior queda: ${s.dd}%\n\n`;
+  txt += `--- histórico ---\n`;
+  S.journal.forEach(t=>{ txt += `${t.t} | ${t.side} @ ${fmt(t.price)} | ${t.usdt?fmt(t.usdt)+' USDT':''}${t.pnl!=null?' | resultado '+fmt(t.pnl):''}${t.note?' | motivo: '+t.note:''}\n`; });
+  $("exportText").value = txt;
+  $("modal").classList.add("show");
+}
+
+// eventos
+document.querySelectorAll(".pct").forEach(b=>b.onclick=()=>{ $("amount").value=(S.cash*parseFloat(b.dataset.p)).toFixed(2); });
+$("btnBuy").onclick=buy;
+$("btnSell").onclick=sell;
+$("symbol").onchange=()=>{ S.symbol=$("symbol").value; save(); refresh(); };
+$("export").onclick=exportJournal;
+$("copy").onclick=()=>{ const t=$("exportText"); t.select(); try{navigator.clipboard.writeText(t.value);}catch(e){document.execCommand("copy");} toast("Copiado!"); };
+$("closeModal").onclick=()=>$("modal").classList.remove("show");
+$("reset").onclick=()=>{ if(confirm("Zerar todo o treino e voltar pra 10.000 USDT fake?")){ S=def(); save(); refresh(); render(); } };
+
+$("symbol").value = S.symbol;
+buildChart(); refresh(); render();
+timer = setInterval(refresh, 20000);
+</script>
+</body>
+</html>

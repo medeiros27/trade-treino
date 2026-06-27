@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Painel" />
+<meta name="theme-color" content="#0b0e11" />
+<link rel="manifest" href="manifest.json" />
+<title>Painel de Análise — Pessoal</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+  :root{
+    --bg:#0b0e11; --panel:#151a21; --panel2:#1b222c; --border:#232b36;
+    --text:#e6edf3; --muted:#8b97a7; --green:#22c55e; --red:#ef4444;
+    --blue:#3b82f6; --yellow:#eab308; --purple:#a855f7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:14px;}
+  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+    padding:14px 18px;border-bottom:1px solid var(--border);background:var(--panel);}
+  header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.3px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-left:auto}
+  label.fld{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted)}
+  select,input{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:7px 9px;font-size:13px;outline:none;min-width:96px}
+  button{background:var(--blue);border:none;color:#fff;border-radius:8px;
+    padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end}
+  button:hover{filter:brightness(1.08)}
+  .price{font-size:22px;font-weight:800}
+  .chg{font-size:13px;font-weight:700}
+  .up{color:var(--green)} .down{color:var(--red)} .neu{color:var(--muted)}
+  .wrap{padding:16px 18px;max-width:1100px;margin:0 auto}
+  .disclaimer{background:#2a1f0a;border:1px solid #5c4607;color:#fde68a;
+    border-radius:10px;padding:11px 14px;font-size:12.5px;line-height:1.5;margin-bottom:14px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:14px 16px;margin-bottom:14px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.5px;
+    color:var(--muted);margin:0 0 10px}
+  .chart{width:100%}
+  #status{font-size:12px;color:var(--muted);padding:2px 0}
+  .placar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .placar .box{flex:1;min-width:120px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:10px;padding:12px;text-align:center}
+  .placar .box .n{font-size:26px;font-weight:800}
+  .placar .box .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .verdict{padding:12px 14px;border-radius:10px;font-size:13.5px;line-height:1.5;margin-bottom:14px}
+  .sigs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .sig{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+  .sig .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .sig .name{font-weight:700;font-size:13px}
+  .sig .tag{font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;text-transform:uppercase}
+  .tag.alta{background:rgba(34,197,94,.15);color:var(--green)}
+  .tag.baixa{background:rgba(239,68,68,.15);color:var(--red)}
+  .tag.neutro{background:rgba(139,151,167,.15);color:var(--muted)}
+  .sig .exp{font-size:12px;color:var(--muted);line-height:1.45}
+  .sig .val{font-size:12px;color:var(--text);margin-top:4px;font-variant-numeric:tabular-nums}
+  details{margin-top:6px}
+  details summary{cursor:pointer;color:var(--muted);font-size:12.5px;padding:6px 0}
+  details .body{font-size:12.5px;color:var(--muted);line-height:1.6;padding:4px 0 0}
+  details .body b{color:var(--text)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>📊 Painel de Análise <span style="color:var(--muted);font-weight:400">· pessoal</span></h1>
+  <div class="controls">
+    <label class="fld">Ativo
+      <input id="symbol" list="symlist" value="BTCUSDT" autocomplete="off" />
+      <datalist id="symlist">
+        <option value="BTCUSDT">Bitcoin</option>
+        <option value="ETHUSDT">Ethereum</option>
+        <option value="SOLUSDT">Solana</option>
+        <option value="BNBUSDT">BNB</option>
+        <option value="XRPUSDT">XRP</option>
+        <option value="ADAUSDT">Cardano</option>
+        <option value="DOGEUSDT">Dogecoin</option>
+      </datalist>
+    </label>
+    <label class="fld">Timeframe
+      <select id="interval">
+        <option value="1m">1 min</option>
+        <option value="5m" selected>5 min</option>
+        <option value="15m">15 min</option>
+        <option value="1h">1 hora</option>
+        <option value="4h">4 horas</option>
+        <option value="1d">1 dia</option>
+      </select>
+    </label>
+    <label class="fld">Atualizar
+      <select id="auto">
+        <option value="0">Manual</option>
+        <option value="15000">15s</option>
+        <option value="30000" selected>30s</option>
+        <option value="60000">60s</option>
+      </select>
+    </label>
+    <button id="reload">Atualizar agora</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
+    <span id="px" class="price">—</span>
+    <span id="chg" class="chg neu">—</span>
+    <span id="status">carregando…</span>
+  </div>
+
+  <div class="disclaimer">
+    ⚠️ <b>Leia isto.</b> Este painel só mostra indicadores técnicos calculados sobre o preço — é uma ferramenta de
+    <b>estudo</b>, não um conselho de investimento. Nenhum indicador prevê o futuro. O "placar" abaixo é apenas uma
+    descrição de como os indicadores estão posicionados <b>agora</b>; confluência não é garantia de nada.
+    A maioria das pessoas que opera com frequência <b>perde dinheiro</b>. Nunca arrisque dinheiro que faz falta.
+  </div>
+
+  <div class="card">
+    <h2>Gráfico de preço · candles + médias (EMA 9/21, SMA 50) + volume</h2>
+    <div id="mainChart" class="chart"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>RSI (14) — força / fôlego do movimento</h2>
+      <div id="rsiChart" class="chart"></div>
+    </div>
+    <div class="card">
+      <h2>MACD (12, 26, 9) — momentum</h2>
+      <div id="macdChart" class="chart"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Leitura técnica (placar honesto)</h2>
+    <div class="placar">
+      <div class="box"><div class="n up" id="cAlta">0</div><div class="l">sinais de alta</div></div>
+      <div class="box"><div class="n down" id="cBaixa">0</div><div class="l">sinais de baixa</div></div>
+      <div class="box"><div class="n neu" id="cNeutro">0</div><div class="l">neutros</div></div>
+    </div>
+    <div id="verdict" class="verdict"></div>
+    <div id="sigs" class="sigs"></div>
+  </div>
+
+  <div class="card">
+    <h2>Como ler cada indicador (para leigos)</h2>
+    <details><summary>RSI — sobrecompra e sobrevenda</summary>
+      <div class="body">Vai de 0 a 100. <b>Acima de 70</b> = comprado demais/esticado (pode corrigir pra baixo).
+      <b>Abaixo de 30</b> = vendido demais (pode reagir pra cima). Entre 30 e 70 = neutro. Não é gatilho sozinho.</div></details>
+    <details><summary>MACD — força do momentum</summary>
+      <div class="body">Diferença entre duas médias. Quando o <b>histograma fica positivo</b>, o momentum é comprador;
+      <b>negativo</b>, vendedor. O cruzamento da linha MACD com a linha de sinal costuma ser observado como virada de momentum.</div></details>
+    <details><summary>EMA / SMA — tendência</summary>
+      <div class="body">Médias do preço. Preço <b>acima</b> das médias e médias curtas <b>acima</b> das longas = tendência de alta;
+      o contrário = tendência de baixa. A SMA 50 cruzando a SMA 200 é o famoso "golden/death cross".</div></details>
+    <details><summary>Por que nada disso garante lucro</summary>
+      <div class="body">Indicadores são derivados do preço passado. Eles descrevem o que <b>já</b> aconteceu, não o que vai
+      acontecer. Servem para organizar a leitura e o risco — não para "adivinhar". Use sempre com gestão de risco e,
+      idealmente, treine em conta demo antes de arriscar dinheiro real.</div></details>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const BASE = "https://data-api.binance.vision/api/v3";
+let charts = {}, series = {}, timer = null;
+
+// ---------- indicadores ----------
+function sma(v, p){const o=Array(v.length).fill(null);let s=0;for(let i=0;i<v.length;i++){s+=v[i];if(i>=p)s-=v[i-p];if(i>=p-1)o[i]=s/p;}return o;}
+function ema(v, p){const o=Array(v.length).fill(null);const k=2/(p+1);let prev,s=0;
+  for(let i=0;i<v.length;i++){if(i<p){s+=v[i];if(i===p-1){prev=s/p;o[i]=prev;}}else{prev=v[i]*k+prev*(1-k);o[i]=prev;}}return o;}
+function emaArr(a, p){const o=Array(a.length).fill(null);const k=2/(p+1);let prev,s=0;
+  for(let i=0;i<a.length;i++){if(i<p){s+=a[i];if(i===p-1){prev=s/p;o[i]=prev;}}else{prev=a[i]*k+prev*(1-k);o[i]=prev;}}return o;}
+function rsi(v, p=14){const o=Array(v.length).fill(null);let g=0,l=0;
+  for(let i=1;i<=p;i++){const c=v[i]-v[i-1];if(c>=0)g+=c;else l-=c;}
+  let ag=g/p,al=l/p;o[p]=al===0?100:100-100/(1+ag/al);
+  for(let i=p+1;i<v.length;i++){const c=v[i]-v[i-1];const gg=c>0?c:0,ll=c<0?-c:0;
+    ag=(ag*(p-1)+gg)/p;al=(al*(p-1)+ll)/p;o[i]=al===0?100:100-100/(1+ag/al);}return o;}
+function macd(v){const ef=ema(v,12),es=ema(v,26);
+  const line=v.map((_,i)=>ef[i]!=null&&es[i]!=null?ef[i]-es[i]:null);
+  const start=line.findIndex(x=>x!=null);
+  const sub=line.slice(start);const sig=emaArr(sub,9);
+  const signal=Array(v.length).fill(null);for(let i=0;i<sig.length;i++)signal[start+i]=sig[i];
+  const hist=v.map((_,i)=>line[i]!=null&&signal[i]!=null?line[i]-signal[i]:null);
+  return {line,signal,hist};}
+
+const lineData = (t,a)=>{const d=[];for(let i=0;i<a.length;i++)if(a[i]!=null)d.push({time:t[i],value:a[i]});return d;};
+
+// ---------- gráficos ----------
+function baseOpts(h){return{
+  width:0,height:h,layout:{background:{color:"transparent"},textColor:"#8b97a7",fontSize:11},
+  grid:{vertLines:{color:"#1b222c"},horzLines:{color:"#1b222c"}},
+  rightPriceScale:{borderColor:"#232b36",minimumWidth:72},
+  timeScale:{borderColor:"#232b36",timeVisible:true,secondsVisible:false},
+  crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+};}
+
+function buildCharts(){
+  charts.main = LightweightCharts.createChart($("mainChart"), baseOpts(380));
+  series.candle = charts.main.addCandlestickSeries({upColor:"#22c55e",downColor:"#ef4444",
+    borderVisible:false,wickUpColor:"#22c55e",wickDownColor:"#ef4444"});
+  series.ema9 = charts.main.addLineSeries({color:"#3b82f6",lineWidth:1,priceLineVisible:false,lastValueVisible:false});
+  series.ema21 = charts.main.addLineSeries({color:"#eab308",lineWidth:1,priceLineVisible:false,lastValueVisible:false});
+  series.sma50 = charts.main.addLineSeries({color:"#a855f7",lineWidth:1,priceLineVisible:false,lastValueVisible:false});
+  series.vol = charts.main.addHistogramSeries({priceScaleId:"",priceFormat:{type:"volume"}});
+  series.vol.priceScale().applyOptions({scaleMargins:{top:0.82,bottom:0}});
+
+  charts.rsi = LightweightCharts.createChart($("rsiChart"), baseOpts(150));
+  series.rsi = charts.rsi.addLineSeries({color:"#a855f7",lineWidth:2,priceLineVisible:false});
+  series.rsi.createPriceLine({price:70,color:"#5c4607",lineWidth:1,lineStyle:2,axisLabelVisible:true,title:"70"});
+  series.rsi.createPriceLine({price:30,color:"#0b4a2f",lineWidth:1,lineStyle:2,axisLabelVisible:true,title:"30"});
+
+  charts.macd = LightweightCharts.createChart($("macdChart"), baseOpts(150));
+  series.macdHist = charts.macd.addHistogramSeries({});
+  series.macdLine = charts.macd.addLineSeries({color:"#3b82f6",lineWidth:1,priceLineVisible:false,lastValueVisible:false});
+  series.macdSignal = charts.macd.addLineSeries({color:"#eab308",lineWidth:1,priceLineVisible:false,lastValueVisible:false});
+
+  window.addEventListener("resize", resize);
+}
+function resize(){const w=$("mainChart").clientWidth;charts.main.applyOptions({width:w});
+  const w2=$("rsiChart").clientWidth;charts.rsi.applyOptions({width:w2});
+  charts.macd.applyOptions({width:$("macdChart").clientWidth});}
+
+// ---------- dados ----------
+async function load(){
+  const sym=$("symbol").value.trim().toUpperCase()||"BTCUSDT";
+  const itv=$("interval").value;
+  $("status").textContent="atualizando…";
+  try{
+    const r=await fetch(`${BASE}/klines?symbol=${sym}&interval=${itv}&limit=300`);
+    if(!r.ok) throw new Error("HTTP "+r.status+" (símbolo existe? ex.: BTCUSDT)");
+    const raw=await r.json();
+    if(!Array.isArray(raw)||!raw.length) throw new Error("sem dados para "+sym);
+    const candles=raw.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4],vol:+k[5]}));
+    const t=candles.map(c=>c.time), close=candles.map(c=>c.close);
+
+    const e9=ema(close,9),e21=ema(close,21),s50=sma(close,50),s200=sma(close,200);
+    const rs=rsi(close,14),mc=macd(close);
+
+    series.candle.setData(candles.map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})));
+    series.vol.setData(candles.map(c=>({time:c.time,value:c.vol,color:c.close>=c.open?"rgba(34,197,94,.4)":"rgba(239,68,68,.4)"})));
+    series.ema9.setData(lineData(t,e9));
+    series.ema21.setData(lineData(t,e21));
+    series.sma50.setData(lineData(t,s50));
+    series.rsi.setData(lineData(t,rs));
+    series.macdLine.setData(lineData(t,mc.line));
+    series.macdSignal.setData(lineData(t,mc.signal));
+    series.macdHist.setData(t.map((tt,i)=>mc.hist[i]==null?null:{time:tt,value:mc.hist[i],
+      color:mc.hist[i]>=0?"rgba(34,197,94,.6)":"rgba(239,68,68,.6)"}).filter(Boolean));
+
+    const last=close.length-1;
+    const px=close[last], prev=close[last-1]||px;
+    const firstClose=close[0];
+    const pct=((px-firstClose)/firstClose)*100;
+    $("px").textContent=px.toLocaleString("pt-BR",{maximumFractionDigits:px<10?5:2});
+    const chgEl=$("chg");chgEl.textContent=(pct>=0?"▲ +":"▼ ")+pct.toFixed(2)+"% (no período)";
+    chgEl.className="chg "+(pct>=0?"up":"down");
+
+    leitura({px,e9:e9[last],e21:e21[last],s50:s50[last],s200:s200[last],
+      rsi:rs[last],hist:mc.hist[last]});
+
+    charts.main.timeScale().fitContent();charts.rsi.timeScale().fitContent();charts.macd.timeScale().fitContent();
+    $("status").textContent="atualizado "+new Date().toLocaleTimeString("pt-BR")+" · "+sym+" "+itv;
+  }catch(e){$("status").textContent="erro: "+e.message;}
+}
+
+function leitura(d){
+  const sigs=[];
+  const add=(name,status,exp,val)=>sigs.push({name,status,exp,val});
+
+  add("Preço × EMA 21",
+    d.px>d.e21?"alta":"baixa",
+    d.px>d.e21?"Preço acima da média de 21 — viés de curto prazo comprador.":"Preço abaixo da média de 21 — viés de curto prazo vendedor.",
+    "px "+d.px.toFixed(2)+" · EMA21 "+(d.e21?d.e21.toFixed(2):"—"));
+
+  if(d.e9!=null&&d.e21!=null) add("EMA 9 × EMA 21",
+    d.e9>d.e21?"alta":"baixa",
+    d.e9>d.e21?"Média curta acima da longa — tendência recente de alta.":"Média curta abaixo da longa — tendência recente de baixa.",
+    "EMA9 "+d.e9.toFixed(2)+" · EMA21 "+d.e21.toFixed(2));
+
+  if(d.hist!=null) add("MACD (momentum)",
+    d.hist>=0?"alta":"baixa",
+    d.hist>=0?"Histograma positivo — momentum comprador.":"Histograma negativo — momentum vendedor.",
+    "hist "+d.hist.toFixed(2));
+
+  if(d.rsi!=null){let st="neutro",ex="RSI em zona neutra (sem exagero).";
+    if(d.rsi>70){st="baixa";ex="RSI sobrecomprado (>70) — esticado, risco de correção.";}
+    else if(d.rsi<30){st="alta";ex="RSI sobrevendido (<30) — pode haver reação de alta.";}
+    add("RSI (14)",st,ex,"RSI "+d.rsi.toFixed(1));}
+
+  if(d.s50!=null&&d.s200!=null) add("SMA 50 × SMA 200",
+    d.s50>d.s200?"alta":"baixa",
+    d.s50>d.s200?"Tendência de fundo de alta (golden cross).":"Tendência de fundo de baixa (death cross).",
+    "SMA50 "+d.s50.toFixed(2)+" · SMA200 "+d.s200.toFixed(2));
+
+  const a=sigs.filter(s=>s.status==="alta").length;
+  const b=sigs.filter(s=>s.status==="baixa").length;
+  const n=sigs.filter(s=>s.status==="neutro").length;
+  $("cAlta").textContent=a;$("cBaixa").textContent=b;$("cNeutro").textContent=n;
+
+  const v=$("verdict");let txt,bg,col;
+  if(a>b){txt=`Neste momento e timeframe, <b>${a} de ${sigs.length}</b> indicadores estão inclinados para <b>ALTA</b>. Isso descreve o presente — não prevê o futuro. Confluência ≠ certeza.`;bg="rgba(34,197,94,.10)";col="#22c55e";}
+  else if(b>a){txt=`Neste momento e timeframe, <b>${b} de ${sigs.length}</b> indicadores estão inclinados para <b>BAIXA</b>. Isso descreve o presente — não prevê o futuro. Confluência ≠ certeza.`;bg="rgba(239,68,68,.10)";col="#ef4444";}
+  else{txt=`Indicadores <b>divididos / neutros</b> agora — sem direção dominante clara. Em situações assim, o mais comum entre operadores é esperar.`;bg="rgba(139,151,167,.10)";col="#8b97a7";}
+  v.innerHTML=txt;v.style.background=bg;v.style.border="1px solid "+col+"55";
+
+  $("sigs").innerHTML=sigs.map(s=>`<div class="sig"><div class="top"><span class="name">${s.name}</span>
+    <span class="tag ${s.status}">${s.status}</span></div><div class="exp">${s.exp}</div>
+    <div class="val">${s.val}</div></div>`).join("");
+}
+
+function setAuto(){if(timer)clearInterval(timer);const ms=+$("auto").value;if(ms)timer=setInterval(load,ms);}
+
+buildCharts();resize();load();setAuto();
+$("reload").onclick=load;
+$("symbol").addEventListener("change",load);
+$("interval").addEventListener("change",load);
+$("auto").addEventListener("change",setAuto);
+</script>
+</body>
+</html>
