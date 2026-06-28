@@ -1,0 +1,6 @@
+.claude/
+bot_state.json
+bot_trades.csv
+resultado_backtest.csv
+__pycache__/
+*.log

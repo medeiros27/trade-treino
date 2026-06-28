@@ -1,0 +1,76 @@
+:root{
+  --bg:#0b0e11; --panel:#151a21; --panel2:#1b222c; --border:#232b36;
+  --text:#e6edf3; --muted:#8b97a7; --green:#22c55e; --red:#ef4444;
+  --blue:#3b82f6; --yellow:#eab308;
+  --tabbar-h:56px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  padding:env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + var(--tabbar-h) + 16px);}
+.bar{background:#2a1f0a;border:1px solid #5c4607;color:#fde68a;border-radius:10px;
+  padding:8px 11px;font-size:12px;text-align:center;margin:10px 0}
+.row{display:flex;gap:10px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+.saldo{flex:1;text-align:center}
+.saldo .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.saldo .v{font-size:21px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+.up{color:var(--green)} .down{color:var(--red)} .neu{color:var(--muted)}
+select{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  border-radius:10px;padding:11px;font-size:15px;outline:none}
+.px{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.pxsub{font-size:13px;color:var(--muted)}
+#chart{width:100%;height:240px;margin-top:8px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.badge{flex:1;min-width:90px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:10px;padding:9px;text-align:center}
+.badge .l{font-size:10px;color:var(--muted);text-transform:uppercase}
+.badge .v{font-size:15px;font-weight:700;margin-top:2px}
+.pos{display:flex;justify-content:space-between;align-items:center}
+.pos .lbl{font-size:12px;color:var(--muted)}
+.pos .big{font-size:20px;font-weight:800}
+input[type=number],input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--border);
+  color:var(--text);border-radius:10px;padding:12px;font-size:16px;outline:none}
+.pcts{display:flex;gap:8px;margin:8px 0}
+.pct{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+  border-radius:8px;padding:9px;font-size:13px;text-align:center;cursor:pointer}
+.btns{display:flex;gap:10px;margin-top:6px}
+.btn{flex:1;border:none;border-radius:12px;padding:17px;font-size:17px;font-weight:800;
+  color:#fff;cursor:pointer}
+.buy{background:var(--green)} .sell{background:var(--red)}
+.btn:disabled{opacity:.35}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 10px}
+.jrow{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border)}
+.jrow:last-child{border:none}
+.jrow .s{font-weight:700}
+.mini{display:flex;gap:8px;margin-top:8px}
+.mini button{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  border-radius:10px;padding:11px;font-size:13px;cursor:pointer}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);background:#111826;
+  border:1px solid var(--border);color:var(--text);padding:11px 16px;border-radius:10px;
+  font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:20}
+#toast.show{opacity:1}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;
+  justify-content:center;padding:18px;z-index:30}
+.modal.show{display:flex}
+.modal .box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;width:100%;max-width:440px}
+textarea{width:100%;height:180px;background:var(--panel2);border:1px solid var(--border);
+  color:var(--text);border-radius:10px;padding:10px;font-size:12px;font-family:monospace}
+small{color:var(--muted);font-size:11.5px;line-height:1.5;display:block}
+
+/* ---------- telas (abas) ---------- */
+.tela{display:none}
+.tela.ativa{display:block}
+.placeholder{text-align:center;color:var(--muted);padding:48px 12px}
+.placeholder h2{color:var(--text);font-size:20px;margin:0 0 8px}
+
+/* ---------- barra de abas no rodapé ---------- */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:15;
+  display:flex;background:var(--panel);border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom);}
+.tab{flex:1;border:none;background:transparent;color:var(--muted);
+  min-height:var(--tabbar-h);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;font-size:11px;font-weight:600;cursor:pointer;padding:6px 2px}
+.tab .ico{font-size:20px;line-height:1}
+.tab.ativa{color:var(--text)}
+.tab.ativa .ico{filter:none}

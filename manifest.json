@@ -1,6 +1,6 @@
 {
-  "name": "Painel de Análise",
-  "short_name": "Painel",
+  "name": "Treino de Trade",
+  "short_name": "Treino",
   "start_url": ".",
   "display": "standalone",
   "orientation": "portrait",
