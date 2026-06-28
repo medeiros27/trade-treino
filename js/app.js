@@ -6,6 +6,7 @@ import * as grafico from "./grafico.js";
 import * as guardrails from "./guardrails.js";
 import * as missoes from "./missoes.js";
 import * as progresso from "./progresso.js";
+import * as aprender from "./aprender.js";
 
 const $ = id => document.getElementById(id);
 const fmt = (n, d = 2) => Number(n).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -150,6 +151,47 @@ function renderProgresso() {
   }
 }
 
+// ---------- aprender (glossário, cartões, tutorial) ----------
+let cartaoConquista = null; // conquista a creditar quando tocar "Entendi" no cartão atual
+
+function renderGlossario() {
+  const el = $("glossario");
+  if (!el) return;
+  el.innerHTML = Object.entries(aprender.GLOSSARIO).map(([termo, txt]) =>
+    `<div class="termo"><div class="tt">${termo}</div><div class="tx">${txt}</div></div>`
+  ).join("");
+}
+
+function abrirCartao(titulo, texto, conquista) {
+  $("cartaoTitulo").textContent = titulo;
+  $("cartaoTexto").textContent = texto;
+  cartaoConquista = conquista || null;
+  $("cartao").classList.add("show");
+}
+
+function fecharCartao() {
+  $("cartao").classList.remove("show");
+}
+
+function cartaoEntendi() {
+  if (cartaoConquista && !S.missoes.conquistas.includes(cartaoConquista)) {
+    S.missoes.conquistas.push(cartaoConquista);
+    checarMissoes();
+  }
+  fecharCartao();
+}
+
+function mostrarTutorial() {
+  $("tutorialTexto").innerHTML = `<ul>
+    <li>💵 É dinheiro <b>100% FAKE</b> — treine à vontade, sem risco nenhum.</li>
+    <li>📊 Lá embaixo tem <b>4 abas</b>: Treinar, Missões, Progresso e Aprender.</li>
+    <li>🛒 Pra operar, digite <b>quanto investir</b> e toque em Comprar ou Vender.</li>
+    <li>🛡️🎯 O <b>stop</b> e o <b>alvo</b> saem sozinhos pra te proteger e garantir lucro.</li>
+    <li>🎯 Siga as <b>Missões</b> — elas te ensinam um passo de cada vez.</li>
+  </ul>`;
+  $("tutorial").classList.add("show");
+}
+
 // ---------- risco × retorno (guardrails) ----------
 function atualizarRR() {
   const valor = parseFloat($("amount").value) || 0;
@@ -278,6 +320,7 @@ function trocarTela(idTela) {
   if (idTela === "tela-treinar" && G) G.resize();
   if (idTela === "tela-missoes") renderMissoes();
   if (idTela === "tela-progresso") renderProgresso();
+  if (idTela === "tela-aprender") renderGlossario();
 }
 
 // ---------- eventos ----------
@@ -310,6 +353,19 @@ function ligarEventos() {
   };
   document.querySelectorAll(".tab").forEach(b => b.onclick = () => trocarTela(b.dataset.tela));
 
+  // badges clicáveis → cartão de explicação (e completam m01/m02)
+  $("bRsi").closest(".badge").onclick = () => abrirCartao("RSI", aprender.explicacao("RSI"), "leu_rsi");
+  $("bTrend").closest(".badge").onclick = () => abrirCartao("Tendência", aprender.explicacao("Tendência"), "leu_tm");
+  $("bMacd").closest(".badge").onclick = () => abrirCartao("Momentum", aprender.explicacao("Momentum"), "leu_tm");
+
+  // cartão de explicação
+  $("cartaoEntendi").onclick = cartaoEntendi;
+  $("cartaoFechar").onclick = fecharCartao;
+
+  // tutorial
+  $("tutorialOk").onclick = () => { S.tutorialFeito = true; Estado.salvar(S); $("tutorial").classList.remove("show"); };
+  $("reverTutorial").onclick = mostrarTutorial;
+
   // delegação: botões "Entendi" das missões m01/m02 (sobrevivem a re-render)
   const lista = $("listaMissoes");
   if (lista) lista.addEventListener("click", e => {
@@ -337,8 +393,10 @@ function boot() {
   atualizarRR();
   renderMissoes();
   renderFaixa();
+  renderGlossario();
   loop();
   setInterval(loop, 20000);
+  if (!S.tutorialFeito) mostrarTutorial();
 }
 
 boot();

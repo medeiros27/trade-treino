@@ -127,9 +127,12 @@
 
   <!-- ============ TELA APRENDER ============ -->
   <section class="tela" id="tela-aprender">
-    <div class="placeholder">
-      <h2>📚 Aprender</h2>
-      <p>Em breve — glossário e tutorial.</p>
+    <h3 style="margin:14px 4px 12px">📚 Aprender — glossário do trader</h3>
+    <div class="card">
+      <div id="glossario"></div>
+    </div>
+    <div class="card">
+      <button id="reverTutorial">↻ Rever tutorial</button>
     </div>
   </section>
 
@@ -143,6 +146,23 @@
       <button id="closeModal">Fechar</button>
     </div>
     <small style="margin-top:8px">Mande isto pro Claude de tempos em tempos. Ele analisa sua disciplina e te diz se está evoluindo.</small>
+  </div></div>
+
+  <!-- cartão reutilizável (explicação dos indicadores) -->
+  <div class="modal" id="cartao"><div class="box">
+    <h3 id="cartaoTitulo"></h3>
+    <p id="cartaoTexto"></p>
+    <div class="mini">
+      <button id="cartaoEntendi">Entendi</button>
+      <button id="cartaoFechar">Fechar</button>
+    </div>
+  </div></div>
+
+  <!-- tutorial de boas-vindas -->
+  <div class="modal" id="tutorial"><div class="box">
+    <h3>Bem-vindo ao Treino! 🎓</h3>
+    <div id="tutorialTexto"></div>
+    <button id="tutorialOk">Começar</button>
   </div></div>
 
   <!-- ============ barra de abas no rodapé ============ -->
