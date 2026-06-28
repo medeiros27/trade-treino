@@ -91,3 +91,20 @@ small{color:var(--muted);font-size:11.5px;line-height:1.5;display:block}
 .missao-item.bloq{opacity:.5}
 .btn-entendi{margin-top:8px;background:var(--blue);border:none;color:#fff;
   border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer}
+
+/* ---------- progresso ---------- */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(98px,1fr));gap:8px;margin-bottom:12px}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 12px;text-align:center}
+.stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.stat .v{font-size:19px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+#curvaChart{width:100%;height:160px}
+#exportProg{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  border-radius:10px;padding:13px;font-size:14px;font-weight:600;cursor:pointer}
+.aptidao-nota{font-size:42px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.aptidao-status{font-size:14px;color:var(--muted);margin:4px 0 12px}
+.criterio{display:flex;align-items:center;gap:8px;font-size:14px;padding:6px 0;border-bottom:1px solid var(--border)}
+.criterio:last-of-type{border:none}
+.criterio .mark{font-weight:800}
+.criterio .mark.ok{color:var(--green)}
+.criterio .mark.no{color:var(--red)}
+.aviso-aptidao{color:var(--yellow);font-size:11.5px;line-height:1.5;margin-top:10px}

@@ -5,6 +5,7 @@ import * as trade from "./trade.js";
 import * as grafico from "./grafico.js";
 import * as guardrails from "./guardrails.js";
 import * as missoes from "./missoes.js";
+import * as progresso from "./progresso.js";
 
 const $ = id => document.getElementById(id);
 const fmt = (n, d = 2) => Number(n).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -12,6 +13,7 @@ const fmt = (n, d = 2) => Number(n).toLocaleString("pt-BR", { minimumFractionDig
 const S = Estado.carregar();
 let G;                    // API do gráfico
 let last = { price: 0 };  // último preço conhecido
+let curvaChart = null, curvaSerie = null; // gráfico da curva de capital (aba Progresso)
 
 // ---------- render (espelha o treino.html, usando estrutura treino_v2) ----------
 function render() {
@@ -95,6 +97,57 @@ function checarMissoes() {
   renderMissoes();
   renderFaixa();
   Estado.salvar(S);
+}
+
+// ---------- progresso ----------
+function renderProgresso() {
+  const e = progresso.estatisticas(S);
+  const fl = e.fatorLucro;
+  const flTxt = (!isFinite(fl) || fl === 0) ? "—" : fmt(fl, 2);
+  const sinal = n => (n >= 0 ? "+" : "") + fmt(n);
+
+  const est = $("estatisticas");
+  if (est) {
+    const stat = (l, v, cls = "") => `<div class="stat"><div class="l">${l}</div><div class="v${cls ? ' ' + cls : ''}">${v}</div></div>`;
+    est.innerHTML = [
+      stat("Acerto", e.vendas ? e.acerto.toFixed(0) + "%" : "—"),
+      stat("Ganho médio", e.ganhoMedio ? sinal(e.ganhoMedio) : "—", e.ganhoMedio > 0 ? "up" : ""),
+      stat("Perda média", e.perdaMedio ? sinal(e.perdaMedio) : "—", e.perdaMedio < 0 ? "down" : ""),
+      stat("Fator de lucro", flTxt),
+      stat("Pior queda", e.vendas || e.trades ? e.drawdown.toFixed(1) + "%" : "—", e.drawdown < 0 ? "down" : ""),
+      stat("Melhor", e.vendas ? sinal(e.melhor) : "—", e.melhor > 0 ? "up" : ""),
+      stat("Pior", e.vendas ? sinal(e.pior) : "—", e.pior < 0 ? "down" : ""),
+    ].join("");
+  }
+
+  const apEl = $("aptidao");
+  if (apEl) {
+    const a = progresso.aptidao(S);
+    const crit = a.criterios.map(c =>
+      `<div class="criterio"><span class="mark ${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✗'}</span><span>${c.nome}</span></div>`
+    ).join("");
+    apEl.innerHTML = `<div class="aptidao-nota">${a.nota}<span style="font-size:18px;color:var(--muted)">/100</span></div>
+      <div class="aptidao-status">${a.status}</div>
+      ${crit}
+      <div class="aviso-aptidao">Isto é automático. O veredito real é do Claude — exporte seu diário.</div>`;
+  }
+
+  const cEl = $("curvaChart");
+  if (cEl && typeof LightweightCharts !== "undefined") {
+    if (!curvaChart) {
+      curvaChart = LightweightCharts.createChart(cEl, {
+        height: 160,
+        layout: { background: { color: "transparent" }, textColor: "#8b97a7", fontSize: 10 },
+        grid: { vertLines: { color: "#1b222c" }, horzLines: { color: "#1b222c" } },
+        rightPriceScale: { borderColor: "#232b36" },
+        timeScale: { borderColor: "#232b36" },
+      });
+      curvaSerie = curvaChart.addLineSeries({ color: "#3b82f6", lineWidth: 2 });
+    }
+    curvaSerie.setData(progresso.curva(S));
+    curvaChart.timeScale().fitContent();
+    curvaChart.applyOptions({ width: cEl.clientWidth });
+  }
 }
 
 // ---------- risco × retorno (guardrails) ----------
@@ -212,24 +265,7 @@ function venderTudo() {
 }
 
 function exportarDiario() {
-  const sells = S.diario.filter(t => t.side === "VENDA");
-  const wins = sells.filter(t => t.pnl > 0).length;
-  const eqs = S.diario.map(t => t.equity);
-  let peak = S.config.saldoInicial, dd = 0;
-  eqs.forEach(e => { peak = Math.max(peak, e); dd = Math.min(dd, e / peak - 1); });
-  const eq = trade.patrimonio(S, last.price), res = eq - S.config.saldoInicial;
-  const winrate = sells.length ? (wins / sells.length * 100).toFixed(0) : "-";
-
-  let txt = `=== DIÁRIO DE TREINO (dinheiro fake) ===\n`;
-  txt += `Ativo atual: ${S.mercado.symbol}\n`;
-  txt += `Patrimônio: ${fmt(eq)} USDT (começou com ${S.config.saldoInicial})\n`;
-  txt += `Resultado: ${res >= 0 ? '+' : ''}${fmt(res)} USDT\n`;
-  txt += `Operações: ${S.diario.length} | Vendas: ${sells.length} | Acerto: ${winrate}% | Pior queda: ${(dd * 100).toFixed(1)}%\n\n`;
-  txt += `--- histórico ---\n`;
-  S.diario.forEach(t => {
-    txt += `${t.t} | ${t.side} @ ${fmt(t.price)} | ${t.usdt ? fmt(t.usdt) + ' USDT' : ''}${t.pnl != null ? ' | resultado ' + fmt(t.pnl) : ''}${t.motivo ? ' | motivo: ' + t.motivo : ''}\n`;
-  });
-  $("exportText").value = txt;
+  $("exportText").value = progresso.exportarTexto(S, last.price);
   $("modal").classList.add("show");
   if (!S.missoes.conquistas.includes("exportou")) S.missoes.conquistas.push("exportou");
   checarMissoes();
@@ -241,6 +277,7 @@ function trocarTela(idTela) {
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("ativa", b.dataset.tela === idTela));
   if (idTela === "tela-treinar" && G) G.resize();
   if (idTela === "tela-missoes") renderMissoes();
+  if (idTela === "tela-progresso") renderProgresso();
 }
 
 // ---------- eventos ----------
@@ -257,6 +294,7 @@ function ligarEventos() {
   $("stop").onchange = () => { S.carteira.stopPct = parseFloat($("stop").value) || 5; Estado.salvar(S); };
   $("tp").onchange = () => { S.carteira.tpPct = parseFloat($("tp").value) || 0; Estado.salvar(S); };
   $("export").onclick = exportarDiario;
+  $("exportProg").onclick = exportarDiario;
   $("copy").onclick = () => {
     const t = $("exportText"); t.select();
     try { navigator.clipboard.writeText(t.value); } catch (e) { document.execCommand("copy"); }

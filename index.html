@@ -106,9 +106,22 @@
 
   <!-- ============ TELA PROGRESSO ============ -->
   <section class="tela" id="tela-progresso">
-    <div class="placeholder">
-      <h2>📈 Progresso</h2>
-      <p>Em breve — estatísticas, curva de capital e aptidão.</p>
+    <h3 style="margin:14px 4px 12px">📈 Progresso — como você está indo</h3>
+
+    <div id="estatisticas" class="stats-grid"></div>
+
+    <div class="card">
+      <h3>Curva de capital</h3>
+      <div id="curvaChart"></div>
+    </div>
+
+    <div class="card">
+      <h3>Aptidão (automática)</h3>
+      <div id="aptidao"></div>
+    </div>
+
+    <div class="card">
+      <button id="exportProg">📤 Exportar diário (pro Claude)</button>
     </div>
   </section>
 
