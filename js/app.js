@@ -65,6 +65,12 @@ async function loop() {
 
     G.atualizar({ candles, ema9: e9, ema21: e21 });
 
+    const sr = dados.suporteResistencia(candles);
+    G.linhasSR(sr.suporte, sr.resistencia);
+    const c = S.carteira;
+    G.linhasStopTake(c.qty > 0 ? c.stopPrice : 0, c.qty > 0 ? c.tpPrice : 0);
+    G.marcadores(S.diario);
+
     const rv = rs[rs.length - 1];
     $("price").textContent = fmt(last.price);
     $("rsiTxt").textContent = "RSI " + rv.toFixed(0);
@@ -105,6 +111,8 @@ function comprar() {
   $("motivo").value = ""; $("amount").value = "";
   Estado.salvar(S); render();
   const c = S.carteira;
+  G.marcadores(S.diario);
+  G.linhasStopTake(c.qty > 0 ? c.stopPrice : 0, c.qty > 0 ? c.tpPrice : 0);
   toast("Comprou (fake) ✅ · stop " + fmt(c.stopPrice) + " · alvo " + (c.tpPrice ? fmt(c.tpPrice) : "—"));
 }
 
@@ -113,6 +121,8 @@ function venderTudo() {
   const r = trade.vender(S, last.price, "manual");
   $("motivo").value = "";
   Estado.salvar(S); render();
+  G.marcadores(S.diario);
+  G.linhasStopTake(S.carteira.qty > 0 ? S.carteira.stopPrice : 0, S.carteira.qty > 0 ? S.carteira.tpPrice : 0);
   if (r.ok) toast((r.pnl >= 0 ? "Lucro" : "Prejuízo") + " fake: " + fmt(r.pnl) + " USDT");
 }
 
