@@ -74,3 +74,20 @@ small{color:var(--muted);font-size:11.5px;line-height:1.5;display:block}
 .tab .ico{font-size:20px;line-height:1}
 .tab.ativa{color:var(--text)}
 .tab.ativa .ico{filter:none}
+
+/* ---------- missões ---------- */
+.missao-faixa{background:#0e1a2e;border:1px solid var(--blue);border-radius:10px;
+  padding:9px 12px;font-size:13px;margin-bottom:12px;color:var(--text)}
+.missao-faixa:empty{display:none}
+.missao-item{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:12px 14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px}
+.missao-item .corpo{flex:1}
+.missao-item .tit{font-weight:700;font-size:15px}
+.missao-item .ens{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.missao-item .ico{font-size:18px;line-height:1.4}
+.missao-item.feita{border-color:var(--green);background:#0f1d14}
+.missao-item.feita .tit{color:var(--green)}
+.missao-item.atual{border-color:var(--blue);background:#0e1a2e}
+.missao-item.bloq{opacity:.5}
+.btn-entendi{margin-top:8px;background:var(--blue);border:none;color:#fff;
+  border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer}

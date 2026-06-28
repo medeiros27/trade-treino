@@ -4,6 +4,7 @@ import * as dados from "./dados.js";
 import * as trade from "./trade.js";
 import * as grafico from "./grafico.js";
 import * as guardrails from "./guardrails.js";
+import * as missoes from "./missoes.js";
 
 const $ = id => document.getElementById(id);
 const fmt = (n, d = 2) => Number(n).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -53,6 +54,47 @@ function toast(m) {
   t.textContent = m;
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+// ---------- missões ----------
+function renderMissoes() {
+  const el = $("listaMissoes");
+  if (!el) return;
+  el.innerHTML = missoes.LISTA.map(m => {
+    const feita = S.missoes.concluidas.includes(m.id);
+    const atual = m.id === S.missoes.atual;
+    const cls = feita ? "feita" : atual ? "atual" : "bloq";
+    const ico = feita ? "✅" : atual ? "👉" : "🔒";
+    const mostraBtn = (m.id === "m01" || m.id === "m02") && !feita && atual;
+    const btn = mostraBtn ? `<button class="btn-entendi" data-missao="${m.id}">Entendi 👍</button>` : "";
+    return `<div class="missao-item ${cls}">
+      <span class="ico">${ico}</span>
+      <div class="corpo">
+        <div class="tit">${m.titulo}</div>
+        <div class="ens">${m.ensina}</div>
+        ${btn}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderFaixa() {
+  const el = $("missaoAtual");
+  if (!el) return;
+  if (S.missoes.atual === "fim") {
+    el.textContent = "🏆 Você concluiu todas as missões!";
+    return;
+  }
+  const m = missoes.LISTA.find(x => x.id === S.missoes.atual);
+  el.textContent = m ? `👉 Missão: ${m.titulo}` : "";
+}
+
+function checarMissoes() {
+  const novas = missoes.avaliar(S);
+  novas.forEach(nova => toast("✅ Missão concluída: " + nova.conquista));
+  renderMissoes();
+  renderFaixa();
+  Estado.salvar(S);
 }
 
 // ---------- risco × retorno (guardrails) ----------
@@ -115,6 +157,7 @@ async function loop() {
       registrarSePerda(saida.pnl);
       if (saida.motivo === "stop-loss") toast("🛡️ Stop-loss disparou! Saiu pra te proteger (" + fmt(saida.pnl) + " USDT)");
       else if (saida.motivo === "take-profit") toast("🎯 Take-profit! Lucro garantido: +" + fmt(saida.pnl) + " USDT 🎉");
+      checarMissoes();
     }
 
     render();
@@ -153,6 +196,7 @@ function comprar() {
   G.marcadores(S.diario);
   G.linhasStopTake(c.qty > 0 ? c.stopPrice : 0, c.qty > 0 ? c.tpPrice : 0);
   toast("Comprou (fake) ✅ · stop " + fmt(c.stopPrice) + " · alvo " + (c.tpPrice ? fmt(c.tpPrice) : "—"));
+  checarMissoes();
 }
 
 function venderTudo() {
@@ -164,6 +208,7 @@ function venderTudo() {
   G.marcadores(S.diario);
   G.linhasStopTake(S.carteira.qty > 0 ? S.carteira.stopPrice : 0, S.carteira.qty > 0 ? S.carteira.tpPrice : 0);
   if (r.ok) toast((r.pnl >= 0 ? "Lucro" : "Prejuízo") + " fake: " + fmt(r.pnl) + " USDT");
+  checarMissoes();
 }
 
 function exportarDiario() {
@@ -186,6 +231,8 @@ function exportarDiario() {
   });
   $("exportText").value = txt;
   $("modal").classList.add("show");
+  if (!S.missoes.conquistas.includes("exportou")) S.missoes.conquistas.push("exportou");
+  checarMissoes();
 }
 
 // ---------- navegação de abas ----------
@@ -193,6 +240,7 @@ function trocarTela(idTela) {
   document.querySelectorAll(".tela").forEach(s => s.classList.toggle("ativa", s.id === idTela));
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("ativa", b.dataset.tela === idTela));
   if (idTela === "tela-treinar" && G) G.resize();
+  if (idTela === "tela-missoes") renderMissoes();
 }
 
 // ---------- eventos ----------
@@ -223,6 +271,17 @@ function ligarEventos() {
     }
   };
   document.querySelectorAll(".tab").forEach(b => b.onclick = () => trocarTela(b.dataset.tela));
+
+  // delegação: botões "Entendi" das missões m01/m02 (sobrevivem a re-render)
+  const lista = $("listaMissoes");
+  if (lista) lista.addEventListener("click", e => {
+    const btn = e.target.closest(".btn-entendi");
+    if (!btn) return;
+    const id = btn.dataset.missao;
+    const chave = id === "m01" ? "leu_rsi" : "leu_tm";
+    if (!S.missoes.conquistas.includes(chave)) S.missoes.conquistas.push(chave);
+    checarMissoes();
+  });
 }
 
 // ---------- boot ----------
@@ -238,6 +297,8 @@ function boot() {
   ligarEventos();
   render();
   atualizarRR();
+  renderMissoes();
+  renderFaixa();
   loop();
   setInterval(loop, 20000);
 }
