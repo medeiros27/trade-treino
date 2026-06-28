@@ -3,6 +3,7 @@ import * as Estado from "./estado.js";
 import * as dados from "./dados.js";
 import * as trade from "./trade.js";
 import * as grafico from "./grafico.js";
+import * as guardrails from "./guardrails.js";
 
 const $ = id => document.getElementById(id);
 const fmt = (n, d = 2) => Number(n).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -54,6 +55,28 @@ function toast(m) {
   setTimeout(() => t.classList.remove("show"), 1800);
 }
 
+// ---------- risco × retorno (guardrails) ----------
+function atualizarRR() {
+  const valor = parseFloat($("amount").value) || 0;
+  const stopPct = parseFloat($("stop").value) || 5;
+  const tpPct = parseFloat($("tp").value) || 0;
+  const el = $("rr");
+  if (!el) return;
+  if (valor <= 0) {
+    el.textContent = "Digite o valor pra ver risco × retorno";
+    el.style.color = "var(--muted)";
+    return;
+  }
+  const { risco, retorno, ratio } = guardrails.riscoRetorno(valor, stopPct, tpPct);
+  el.textContent = `Você arrisca R$ ${fmt(risco)} pra ganhar R$ ${fmt(retorno)} — proporção ${ratio.toFixed(1)}:1`;
+  el.style.color = ratio >= 2 ? "#22c55e" : ratio >= 1 ? "#eab308" : "#ef4444";
+}
+
+// registra perda no guardrail (cooldown) quando o resultado é negativo
+function registrarSePerda(pnl) {
+  if (pnl < 0) { guardrails.registrarPerda(S, Date.now()); Estado.salvar(S); }
+}
+
 // ---------- loop de atualização ----------
 async function loop() {
   try {
@@ -72,6 +95,7 @@ async function loop() {
     G.marcadores(S.diario);
 
     const rv = rs[rs.length - 1];
+    last.rsi = rv;
     $("price").textContent = fmt(last.price);
     $("rsiTxt").textContent = "RSI " + rv.toFixed(0);
     // badge RSI
@@ -88,6 +112,7 @@ async function loop() {
     // auto-saída (stop/take)
     const saida = trade.checarAutoSaida(S, last.price);
     if (saida && saida.ok) {
+      registrarSePerda(saida.pnl);
       if (saida.motivo === "stop-loss") toast("🛡️ Stop-loss disparou! Saiu pra te proteger (" + fmt(saida.pnl) + " USDT)");
       else if (saida.motivo === "take-profit") toast("🎯 Take-profit! Lucro garantido: +" + fmt(saida.pnl) + " USDT 🎉");
     }
@@ -106,10 +131,24 @@ function comprar() {
   const stopPct = parseFloat($("stop").value) || 5;
   const tpPct = parseFloat($("tp").value) || 0;
   const motivo = $("motivo").value || "";
+
+  const pode = guardrails.podeComprar(S);
+  if (!pode.ok) { Estado.salvar(S); toast(pode.msg); return; }
+
+  const avisos = guardrails.avisosCompra(S, last.price, valor, last.rsi || 0);
+  if (avisos.length) {
+    if (!confirm(avisos.join("\n") + "\n\nComprar mesmo assim?")) {
+      if (last.rsi > 70) { S.flags.recusouCompraCaro = true; Estado.salvar(S); }
+      return;
+    }
+  }
+
   const r = trade.comprar(S, last.price, valor, stopPct, tpPct, motivo);
   if (!r.ok) { toast(r.msg || "Sem caixa suficiente"); return; }
+  guardrails.registrarTrade(S);
   $("motivo").value = ""; $("amount").value = "";
   Estado.salvar(S); render();
+  atualizarRR();
   const c = S.carteira;
   G.marcadores(S.diario);
   G.linhasStopTake(c.qty > 0 ? c.stopPrice : 0, c.qty > 0 ? c.tpPrice : 0);
@@ -119,6 +158,7 @@ function comprar() {
 function venderTudo() {
   if (S.carteira.qty <= 0) return;
   const r = trade.vender(S, last.price, "manual");
+  if (r.ok) registrarSePerda(r.pnl);
   $("motivo").value = "";
   Estado.salvar(S); render();
   G.marcadores(S.diario);
@@ -159,7 +199,9 @@ function trocarTela(idTela) {
 function ligarEventos() {
   document.querySelectorAll(".pct").forEach(b => b.onclick = () => {
     $("amount").value = (S.carteira.caixa * parseFloat(b.dataset.p)).toFixed(2);
+    atualizarRR();
   });
+  ["amount", "stop", "tp"].forEach(id => $(id).addEventListener("input", atualizarRR));
   $("btnBuy").onclick = comprar;
   $("btnSell").onclick = venderTudo;
   $("symbol").onchange = () => { S.mercado.symbol = $("symbol").value; Estado.salvar(S); loop(); };
@@ -195,6 +237,7 @@ function boot() {
   window.addEventListener("resize", () => G.resize());
   ligarEventos();
   render();
+  atualizarRR();
   loop();
   setInterval(loop, 20000);
 }
